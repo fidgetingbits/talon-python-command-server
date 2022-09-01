@@ -45,16 +45,21 @@ class TalonCommandServer:
         The request file will be unlinked after being read.
 
         A request is formatted as:
-         command_id: string;
+         commandId: string;
             - The id of the command to run
          uuid: string;
-            - A uuid that will be written to the response file for sanity checking client-side
+            - A uuid that will be written to the response file for sanity
+              checking client-side
          args: list;
             - Arguments to the command, if any
-         return_command_output: boolean;
+         returnCommandOutput: boolean;
             - A boolean indicating if we should return the output of the command
-         wait_for_finish: boolean;
-            - A boolean indicating if we should await the command to ensure it is complete.  This behaviour is desirable for some commands and not others. For most commands it is ok, and can remove race conditions, but for some commands, such as ones that show a quick picker, it can hang the client
+         waitForFinish: boolean;
+            - A boolean indicating if we should await the command to ensure it
+              is complete.  This behaviour is desirable for some commands and
+              not others. For most commands it is ok, and can remove race
+              conditions, but for some commands, such as ones that show a quick
+              picker, it can hang the client
 
         Returns parsed request or None
         """
