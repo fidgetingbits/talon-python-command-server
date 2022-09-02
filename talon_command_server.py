@@ -86,7 +86,7 @@ class TalonCommandServer:
         """Write JSON-encoded response to request file"""
         # XXX - Cursorless uses wx, which fails if the file exists...
         with open(self.response_file, "w+") as f:
-            f.write(json.dumps(response) + '\n')
+            f.write(json.dumps(response) + "\n")
 
     def initialize_communication_dir(self):
         """Initialize the RPC directory"""
@@ -131,7 +131,7 @@ class TalonCommandServer:
             data_queue.put(result)
         return
 
-    def run_command(self, request, handler, do_async):
+    def run_command_threaded(self, request, handler, do_async):
         """Runs a command handler in a new thread
 
         Optionally waits for the response if async is false"""
@@ -151,6 +151,42 @@ class TalonCommandServer:
             output = data_queue.get()
             t.join()
             return output
+
+    def handle_request(self, command_handler):
+        """Handle reading and responding to a single request"""
+        error = None
+        warnings = None
+
+        if not self.request_file.exists():
+            return False
+
+        request = self.read_request()
+        if not request:
+            return False
+        if not self.validate_request(request):
+            print("WARNING: Received bad request. Ignoring")
+            return False
+
+        if request["returnCommandOutput"] or request["waitForFinish"]:
+            output = command_handler(request["commandId"], *request["args"])
+
+            # XXX - Need to prep error and warning somehow
+            if not request["returnCommandOutput"]:
+                output = None
+            self.send_response(output, request["uuid"], error, warnings)
+        else:
+            # Send the response first since we may block on run_command
+            self.send_response(None, request["uuid"], error, warnings)
+            command_handler(request["commandId"], *request["args"])
+            return
+
+    def send_response(self, output, uuid, warnings, error):
+        response = {}
+        response["returnValue"] = output
+        response["error"] = error
+        response["uuid"] = uuid
+        response["warnings"] = warnings
+        self.write_response(response)
 
     def command_loop(self, command_handler):
         """Loop indefinitely waiting for new commands"""
